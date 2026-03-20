@@ -1,0 +1,763 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>TitulaYA — Validador de Carpeta</title>
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link href="https://fonts.googleapis.com/css2?family=Space+Mono:wght@400;700&family=Syne:wght@400;600;700;800&display=swap" rel="stylesheet" />
+<style>
+  :root {
+    --bg: #0d0f14;
+    --surface: #15181f;
+    --surface2: #1c2029;
+    --border: #252a36;
+    --accent: #4ade80;
+    --accent-dim: #16a34a22;
+    --accent2: #facc15;
+    --accent2-dim: #facc1515;
+    --danger: #f87171;
+    --danger-dim: #f8717115;
+    --text: #e8eaf0;
+    --muted: #6b7280;
+    --mono: 'Space Mono', monospace;
+    --sans: 'Syne', sans-serif;
+    --radius: 10px;
+    --transition: 0.18s ease;
+  }
+
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  html { scroll-behavior: smooth; }
+
+  body {
+    background: var(--bg);
+    color: var(--text);
+    font-family: var(--sans);
+    min-height: 100vh;
+    line-height: 1.6;
+  }
+
+  /* ── TOPBAR ── */
+  .topbar {
+    position: fixed; top: 0; left: 0; right: 0; z-index: 100;
+    background: #0d0f14ee;
+    backdrop-filter: blur(12px);
+    border-bottom: 1px solid var(--border);
+    display: flex; align-items: center; justify-content: space-between;
+    padding: 0 28px; height: 58px;
+  }
+  .topbar-brand { font-size: 1.15rem; font-weight: 800; letter-spacing: -0.5px; }
+  .topbar-brand span { color: var(--accent); }
+  .topbar-user { display: flex; align-items: center; gap: 14px; font-size: 0.82rem; color: var(--muted); }
+  .topbar-user strong { color: var(--text); }
+  .btn-logout {
+    background: none; border: 1px solid var(--border); color: var(--muted);
+    padding: 4px 12px; border-radius: 6px; cursor: pointer; font-family: var(--mono); font-size: 0.75rem;
+    transition: var(--transition);
+  }
+  .btn-logout:hover { border-color: var(--danger); color: var(--danger); }
+
+  /* ── LAYOUT ── */
+  .app { padding-top: 58px; min-height: 100vh; }
+  .container { max-width: 860px; margin: 0 auto; padding: 40px 20px; }
+
+  /* ── VIEWS ── */
+  .view { display: none; }
+  .view.active { display: block; }
+
+  /* ── AUTH ── */
+  .auth-wrap {
+    min-height: calc(100vh - 58px);
+    display: flex; align-items: center; justify-content: center;
+    padding: 40px 20px;
+  }
+  .auth-card {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 16px;
+    padding: 40px;
+    width: 100%; max-width: 420px;
+  }
+  .auth-title { font-size: 1.6rem; font-weight: 800; margin-bottom: 6px; }
+  .auth-sub { color: var(--muted); font-size: 0.88rem; margin-bottom: 28px; }
+  .auth-toggle { text-align: center; margin-top: 20px; font-size: 0.85rem; color: var(--muted); }
+  .auth-toggle a { color: var(--accent); cursor: pointer; text-decoration: none; }
+  .auth-toggle a:hover { text-decoration: underline; }
+
+  /* ── FORM CONTROLS ── */
+  .field { margin-bottom: 16px; }
+  .field label { display: block; font-size: 0.78rem; font-weight: 700; color: var(--muted); letter-spacing: 0.08em; text-transform: uppercase; margin-bottom: 6px; }
+  .field input, .field select {
+    width: 100%; padding: 11px 14px;
+    background: var(--surface2); border: 1px solid var(--border);
+    border-radius: var(--radius); color: var(--text);
+    font-family: var(--sans); font-size: 0.93rem;
+    outline: none; transition: var(--transition);
+  }
+  .field input:focus, .field select:focus { border-color: var(--accent); box-shadow: 0 0 0 3px var(--accent-dim); }
+  .field select option { background: var(--surface2); }
+
+  .btn {
+    display: inline-flex; align-items: center; justify-content: center; gap: 8px;
+    padding: 11px 22px; border-radius: var(--radius);
+    font-family: var(--sans); font-size: 0.9rem; font-weight: 700;
+    cursor: pointer; border: none; transition: var(--transition); width: 100%;
+  }
+  .btn-primary { background: var(--accent); color: #0a0f0a; }
+  .btn-primary:hover { background: #86efac; }
+  .btn-primary:disabled { opacity: 0.4; cursor: not-allowed; }
+  .btn-outline { background: transparent; border: 1px solid var(--border); color: var(--text); width: auto; }
+  .btn-outline:hover { border-color: var(--accent); color: var(--accent); }
+  .btn-sm { padding: 6px 14px; font-size: 0.8rem; width: auto; }
+
+  /* ── STEP SELECTOR ── */
+  .step-header { margin-bottom: 32px; }
+  .step-label { font-size: 0.75rem; font-weight: 700; color: var(--accent); letter-spacing: 0.1em; text-transform: uppercase; margin-bottom: 8px; }
+  .step-title { font-size: 2rem; font-weight: 800; letter-spacing: -1px; }
+  .step-sub { color: var(--muted); font-size: 0.9rem; margin-top: 6px; }
+
+  .selector-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(200px, 1fr)); gap: 12px; margin-top: 20px; }
+  .selector-card {
+    background: var(--surface); border: 1px solid var(--border);
+    border-radius: var(--radius); padding: 18px 20px;
+    cursor: pointer; transition: var(--transition);
+  }
+  .selector-card:hover { border-color: var(--accent); background: var(--accent-dim); }
+  .selector-card.selected { border-color: var(--accent); background: var(--accent-dim); }
+  .selector-card .card-label { font-size: 0.7rem; font-weight: 700; color: var(--accent); letter-spacing: 0.1em; text-transform: uppercase; margin-bottom: 4px; }
+  .selector-card .card-name { font-size: 0.95rem; font-weight: 700; }
+
+  /* ── PROGRESS BAR ── */
+  .progress-section {
+    background: var(--surface); border: 1px solid var(--border);
+    border-radius: 14px; padding: 24px 28px; margin-bottom: 28px;
+  }
+  .progress-top { display: flex; justify-content: space-between; align-items: flex-end; margin-bottom: 14px; }
+  .progress-info h2 { font-size: 1.3rem; font-weight: 800; }
+  .progress-info p { color: var(--muted); font-size: 0.83rem; margin-top: 2px; }
+  .progress-pct { font-family: var(--mono); font-size: 2.2rem; font-weight: 700; color: var(--accent); }
+  .progress-bar-wrap { background: var(--surface2); border-radius: 99px; height: 8px; overflow: hidden; }
+  .progress-bar-fill { height: 100%; background: var(--accent); border-radius: 99px; transition: width 0.5s ease; }
+
+  .ready-banner {
+    background: var(--accent-dim); border: 1px solid var(--accent);
+    border-radius: 10px; padding: 14px 20px;
+    display: flex; align-items: center; gap: 12px;
+    margin-top: 16px; font-weight: 700; color: var(--accent);
+  }
+  .ready-banner .ico { font-size: 1.4rem; }
+
+  /* ── CHECKLIST ── */
+  .checklist { display: flex; flex-direction: column; gap: 10px; }
+  .doc-card {
+    background: var(--surface); border: 1px solid var(--border);
+    border-radius: var(--radius); overflow: hidden;
+    transition: border-color var(--transition);
+  }
+  .doc-card.estado-completo { border-color: var(--accent); }
+  .doc-card.estado-rechazado { border-color: var(--danger); }
+
+  .doc-header {
+    display: flex; align-items: center; gap: 14px;
+    padding: 16px 20px; cursor: pointer;
+  }
+  .doc-check {
+    width: 26px; height: 26px; border-radius: 50%;
+    border: 2px solid var(--border); background: var(--surface2);
+    display: flex; align-items: center; justify-content: center;
+    flex-shrink: 0; font-size: 0.85rem; transition: var(--transition);
+    cursor: pointer;
+  }
+  .estado-completo .doc-check { background: var(--accent); border-color: var(--accent); color: #0a0f0a; font-weight: 900; }
+  .estado-rechazado .doc-check { background: var(--danger); border-color: var(--danger); color: #fff; }
+
+  .doc-info { flex: 1; }
+  .doc-nombre { font-size: 0.93rem; font-weight: 700; }
+  .doc-desc { font-size: 0.78rem; color: var(--muted); margin-top: 1px; }
+  .doc-badges { display: flex; gap: 6px; margin-top: 4px; }
+  .badge {
+    font-family: var(--mono); font-size: 0.64rem; padding: 2px 7px;
+    border-radius: 4px; font-weight: 700; letter-spacing: 0.04em;
+  }
+  .badge-optional { background: var(--accent2-dim); color: var(--accent2); border: 1px solid #facc1530; }
+  .badge-file { background: #3b82f620; color: #93c5fd; border: 1px solid #3b82f630; }
+  .badge-done { background: var(--accent-dim); color: var(--accent); border: 1px solid #4ade8030; }
+
+  .doc-arrow { color: var(--muted); font-size: 0.85rem; transition: transform var(--transition); }
+  .doc-card.open .doc-arrow { transform: rotate(90deg); }
+
+  .doc-body {
+    display: none; padding: 0 20px 20px 20px;
+    border-top: 1px solid var(--border);
+  }
+  .doc-card.open .doc-body { display: block; }
+
+  .instrucciones-box {
+    background: var(--surface2); border-left: 3px solid var(--accent);
+    border-radius: 0 8px 8px 0; padding: 12px 16px;
+    font-size: 0.83rem; color: var(--text); margin: 16px 0;
+    line-height: 1.7;
+  }
+  .instrucciones-label { font-size: 0.7rem; font-weight: 700; color: var(--accent); letter-spacing: 0.08em; text-transform: uppercase; margin-bottom: 4px; }
+
+  .doc-actions { display: flex; gap: 10px; flex-wrap: wrap; align-items: center; margin-top: 12px; }
+  .file-upload-label {
+    display: inline-flex; align-items: center; gap: 6px;
+    padding: 7px 14px; border-radius: var(--radius);
+    background: var(--surface2); border: 1px dashed var(--border);
+    cursor: pointer; font-size: 0.82rem; color: var(--muted);
+    transition: var(--transition);
+  }
+  .file-upload-label:hover { border-color: var(--accent); color: var(--accent); }
+  .file-upload-label input { display: none; }
+  .doc-notas { font-size: 0.78rem; color: var(--muted); margin-top: 8px; font-family: var(--mono); }
+
+  .btn-mark {
+    display: inline-flex; align-items: center; gap: 6px;
+    padding: 7px 14px; border-radius: var(--radius);
+    font-size: 0.82rem; font-weight: 700; cursor: pointer;
+    border: 1px solid; transition: var(--transition);
+  }
+  .btn-mark-complete { background: var(--accent-dim); border-color: var(--accent); color: var(--accent); }
+  .btn-mark-complete:hover { background: var(--accent); color: #0a0f0a; }
+  .btn-mark-pending { background: var(--danger-dim); border-color: var(--danger); color: var(--danger); }
+  .btn-mark-pending:hover { background: var(--danger); color: #fff; }
+
+  /* ── HISTORIAL ── */
+  .historial-list { display: flex; flex-direction: column; gap: 8px; }
+  .historial-item {
+    display: flex; gap: 14px; align-items: flex-start;
+    background: var(--surface); border: 1px solid var(--border);
+    border-radius: var(--radius); padding: 12px 16px;
+  }
+  .historial-dot { width: 8px; height: 8px; border-radius: 50%; background: var(--accent); flex-shrink: 0; margin-top: 6px; }
+  .historial-accion { font-size: 0.82rem; font-weight: 700; font-family: var(--mono); color: var(--accent); }
+  .historial-detalle { font-size: 0.83rem; color: var(--text); }
+  .historial-time { font-size: 0.72rem; color: var(--muted); font-family: var(--mono); margin-top: 2px; }
+
+  /* ── TABS ── */
+  .tabs { display: flex; gap: 4px; margin-bottom: 28px; background: var(--surface); border: 1px solid var(--border); border-radius: 10px; padding: 4px; }
+  .tab-btn {
+    flex: 1; padding: 9px; border: none; background: transparent;
+    color: var(--muted); font-family: var(--sans); font-size: 0.85rem; font-weight: 700;
+    border-radius: 8px; cursor: pointer; transition: var(--transition);
+  }
+  .tab-btn.active { background: var(--surface2); color: var(--text); }
+  .tab-pane { display: none; }
+  .tab-pane.active { display: block; }
+
+  /* ── TOAST ── */
+  #toast-container { position: fixed; bottom: 24px; right: 24px; z-index: 9999; display: flex; flex-direction: column; gap: 8px; }
+  .toast {
+    background: var(--surface); border: 1px solid var(--border);
+    border-radius: 10px; padding: 12px 18px;
+    font-size: 0.85rem; font-weight: 600;
+    display: flex; align-items: center; gap: 10px;
+    animation: slideIn 0.25s ease;
+    max-width: 320px; box-shadow: 0 8px 30px #00000060;
+  }
+  .toast.success { border-color: var(--accent); color: var(--accent); }
+  .toast.error { border-color: var(--danger); color: var(--danger); }
+  @keyframes slideIn { from { opacity: 0; transform: translateX(20px); } to { opacity: 1; transform: translateX(0); } }
+
+  /* ── SPINNER ── */
+  .spinner { display: inline-block; width: 18px; height: 18px; border: 2px solid var(--border); border-top-color: var(--accent); border-radius: 50%; animation: spin 0.7s linear infinite; }
+  @keyframes spin { to { transform: rotate(360deg); } }
+
+  .loading-overlay {
+    display: none; position: fixed; inset: 0; z-index: 200;
+    background: #0d0f14cc; backdrop-filter: blur(4px);
+    align-items: center; justify-content: center; flex-direction: column; gap: 16px;
+  }
+  .loading-overlay.active { display: flex; }
+  .loading-overlay p { color: var(--muted); font-size: 0.85rem; }
+
+  /* ── MISC ── */
+  .error-msg { color: var(--danger); font-size: 0.82rem; margin-top: 12px; display: none; }
+  .divider { border: none; border-top: 1px solid var(--border); margin: 24px 0; }
+  .section-title { font-size: 0.75rem; font-weight: 700; color: var(--muted); letter-spacing: 0.1em; text-transform: uppercase; margin-bottom: 14px; }
+  .empty-state { text-align: center; padding: 40px; color: var(--muted); font-size: 0.9rem; }
+
+  @media (max-width: 600px) {
+    .auth-card { padding: 28px 20px; }
+    .topbar { padding: 0 16px; }
+    .progress-pct { font-size: 1.6rem; }
+    .step-title { font-size: 1.5rem; }
+  }
+</style>
+</head>
+<body>
+
+<!-- Topbar -->
+<div class="topbar">
+  <div class="topbar-brand">Titula<span>YA</span></div>
+  <div class="topbar-user" id="topbar-user" style="display:none">
+    Hola, <strong id="topbar-nombre">—</strong>
+    <button class="btn-logout" onclick="logout()">Salir</button>
+  </div>
+</div>
+
+<!-- Loading overlay -->
+<div class="loading-overlay" id="loading-overlay">
+  <div class="spinner" style="width:36px;height:36px;border-width:3px"></div>
+  <p>Cargando…</p>
+</div>
+
+<!-- Toast container -->
+<div id="toast-container"></div>
+
+<div class="app">
+
+  <!-- ══ VIEW: AUTH ══ -->
+  <div class="view active" id="view-auth">
+    <div class="auth-wrap">
+      <div class="auth-card">
+
+        <!-- LOGIN -->
+        <div id="panel-login">
+          <div class="auth-title">Bienvenido 👋</div>
+          <div class="auth-sub">Ingresa con tu matrícula para continuar tu proceso.</div>
+          <div class="field"><label>Matrícula</label><input id="login-matricula" placeholder="ej. 2021A01" /></div>
+          <div class="field"><label>Contraseña</label><input id="login-pass" type="password" placeholder="••••••••" /></div>
+          <div class="error-msg" id="login-error"></div>
+          <button class="btn btn-primary" style="margin-top:8px" onclick="doLogin()">Iniciar sesión</button>
+          <div class="auth-toggle">¿No tienes cuenta? <a onclick="showPanel('register')">Regístrate aquí</a></div>
+        </div>
+
+        <!-- REGISTER -->
+        <div id="panel-register" style="display:none">
+          <div class="auth-title">Crear cuenta</div>
+          <div class="auth-sub">Regístrate con tus datos para comenzar.</div>
+          <div class="field"><label>Nombre completo</label><input id="reg-nombre" placeholder="Juan Pérez López" /></div>
+          <div class="field"><label>Matrícula</label><input id="reg-matricula" placeholder="ej. 2021A01" /></div>
+          <div class="field"><label>Correo institucional</label><input id="reg-email" type="email" placeholder="alumno@universidad.mx" /></div>
+          <div class="field"><label>Contraseña</label><input id="reg-pass" type="password" placeholder="Mínimo 8 caracteres" /></div>
+          <div class="error-msg" id="reg-error"></div>
+          <button class="btn btn-primary" style="margin-top:8px" onclick="doRegister()">Registrarme</button>
+          <div class="auth-toggle">¿Ya tienes cuenta? <a onclick="showPanel('login')">Inicia sesión</a></div>
+        </div>
+
+      </div>
+    </div>
+  </div>
+
+  <!-- ══ VIEW: SELECTOR ══ -->
+  <div class="view" id="view-selector">
+    <div class="container">
+      <div class="step-header">
+        <div class="step-label">Paso 1 de 2</div>
+        <div class="step-title">Selecciona tu carrera y opción</div>
+        <div class="step-sub">El sistema generará tu checklist personalizado.</div>
+      </div>
+
+      <div class="section-title">Carrera</div>
+      <div class="selector-grid" id="carreras-grid"></div>
+
+      <div id="opciones-section" style="display:none; margin-top:32px">
+        <div class="section-title">Opción de titulación</div>
+        <div class="selector-grid" id="opciones-grid"></div>
+        <button class="btn btn-primary" style="margin-top:24px; max-width:260px" onclick="iniciarCarpeta()">
+          Generar mi checklist →
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ══ VIEW: CARPETA ══ -->
+  <div class="view" id="view-carpeta">
+    <div class="container">
+
+      <!-- Progress -->
+      <div class="progress-section">
+        <div class="progress-top">
+          <div class="progress-info">
+            <h2 id="prog-titulo">—</h2>
+            <p id="prog-sub">—</p>
+          </div>
+          <div class="progress-pct" id="prog-pct">0%</div>
+        </div>
+        <div class="progress-bar-wrap">
+          <div class="progress-bar-fill" id="prog-bar" style="width:0%"></div>
+        </div>
+        <div id="ready-banner" class="ready-banner" style="display:none">
+          <span class="ico">🎉</span>
+          <span>¡Tu carpeta está completa! Ya puedes acudir al departamento de titulación.</span>
+        </div>
+      </div>
+
+      <!-- Tabs -->
+      <div class="tabs">
+        <button class="tab-btn active" onclick="switchTab('checklist', this)">✅ Checklist</button>
+        <button class="tab-btn" onclick="switchTab('historial', this)">📋 Historial</button>
+      </div>
+
+      <!-- Tab: Checklist -->
+      <div class="tab-pane active" id="tab-checklist">
+        <div class="checklist" id="checklist-list"></div>
+      </div>
+
+      <!-- Tab: Historial -->
+      <div class="tab-pane" id="tab-historial">
+        <div class="section-title">Actividad reciente</div>
+        <div class="historial-list" id="historial-list">
+          <div class="empty-state">Cargando historial…</div>
+        </div>
+      </div>
+
+    </div>
+  </div>
+
+</div><!-- /app -->
+
+<script>
+// ════════════════════════════════════════════
+//  CONFIG
+// ════════════════════════════════════════════
+const API = '';  // Mismo origen
+let TOKEN = localStorage.getItem('tk') || null;
+let USER  = JSON.parse(localStorage.getItem('user') || 'null');
+let selectedCarreraId = null;
+let selectedOpcionId  = null;
+let resumenActual     = null;
+
+// ════════════════════════════════════════════
+//  BOOT
+// ════════════════════════════════════════════
+async function boot() {
+  if (TOKEN && USER) {
+    setTopbar(USER);
+    showLoading();
+    try {
+      const res = await apiFetch('/api/carpeta/resumen');
+      if (res.ok) {
+        resumenActual = await res.json();
+        renderCarpeta(resumenActual);
+        showView('carpeta');
+      } else {
+        // No hay carpeta activa → ir a selector
+        await loadCarreras();
+        showView('selector');
+      }
+    } catch {
+      await loadCarreras();
+      showView('selector');
+    } finally {
+      hideLoading();
+    }
+  } else {
+    showView('auth');
+  }
+}
+
+// ════════════════════════════════════════════
+//  AUTH
+// ════════════════════════════════════════════
+function showPanel(p) {
+  document.getElementById('panel-login').style.display    = p === 'login'    ? '' : 'none';
+  document.getElementById('panel-register').style.display = p === 'register' ? '' : 'none';
+}
+
+async function doLogin() {
+  const matricula = val('login-matricula');
+  const password  = val('login-pass');
+  clearErr('login-error');
+  if (!matricula || !password) return showErr('login-error', 'Completa todos los campos.');
+  showLoading();
+  try {
+    const res = await fetch(`${API}/api/auth/login`, {
+      method: 'POST',
+      headers: {'Content-Type':'application/json'},
+      body: JSON.stringify({matricula, password})
+    });
+    const data = await res.json();
+    if (!res.ok) return showErr('login-error', data.detail || 'Error al iniciar sesión.');
+    saveSession(data);
+    await boot();
+  } catch { showErr('login-error', 'Error de conexión.'); }
+  finally { hideLoading(); }
+}
+
+async function doRegister() {
+  const nombre   = val('reg-nombre');
+  const matricula= val('reg-matricula');
+  const email    = val('reg-email');
+  const password = val('reg-pass');
+  clearErr('reg-error');
+  if (!nombre || !matricula || !email || !password) return showErr('reg-error', 'Completa todos los campos.');
+  if (password.length < 6) return showErr('reg-error', 'La contraseña debe tener al menos 6 caracteres.');
+  showLoading();
+  try {
+    const res = await fetch(`${API}/api/auth/register`, {
+      method: 'POST',
+      headers: {'Content-Type':'application/json'},
+      body: JSON.stringify({nombre, matricula, email, password})
+    });
+    const data = await res.json();
+    if (!res.ok) return showErr('reg-error', data.detail || 'Error al registrar.');
+    saveSession(data);
+    await boot();
+  } catch { showErr('reg-error', 'Error de conexión.'); }
+  finally { hideLoading(); }
+}
+
+function saveSession(data) {
+  TOKEN = data.access_token;
+  USER  = data.user;
+  localStorage.setItem('tk', TOKEN);
+  localStorage.setItem('user', JSON.stringify(USER));
+  setTopbar(USER);
+}
+
+function logout() {
+  TOKEN = null; USER = null;
+  localStorage.removeItem('tk');
+  localStorage.removeItem('user');
+  selectedCarreraId = null; selectedOpcionId = null; resumenActual = null;
+  document.getElementById('topbar-user').style.display = 'none';
+  showView('auth');
+}
+
+function setTopbar(u) {
+  document.getElementById('topbar-nombre').textContent = u.nombre.split(' ')[0];
+  document.getElementById('topbar-user').style.display = '';
+}
+
+// ════════════════════════════════════════════
+//  SELECTOR
+// ════════════════════════════════════════════
+async function loadCarreras() {
+  const res = await apiFetch('/api/catalogo/carreras');
+  if (!res.ok) return;
+  const carreras = await res.json();
+  const grid = document.getElementById('carreras-grid');
+  grid.innerHTML = '';
+  carreras.forEach(c => {
+    const el = document.createElement('div');
+    el.className = 'selector-card';
+    el.innerHTML = `<div class="card-label">${c.clave}</div><div class="card-name">${c.nombre}</div>`;
+    el.onclick = () => selectCarrera(c.id, el);
+    grid.appendChild(el);
+  });
+}
+
+async function selectCarrera(id, el) {
+  selectedCarreraId = id;
+  selectedOpcionId  = null;
+  document.querySelectorAll('#carreras-grid .selector-card').forEach(c => c.classList.remove('selected'));
+  el.classList.add('selected');
+
+  const res = await apiFetch(`/api/catalogo/carreras/${id}/opciones`);
+  if (!res.ok) return;
+  const opciones = await res.json();
+  const grid = document.getElementById('opciones-grid');
+  grid.innerHTML = '';
+  opciones.forEach(o => {
+    const el2 = document.createElement('div');
+    el2.className = 'selector-card';
+    el2.innerHTML = `<div class="card-label">Opción</div><div class="card-name">${o.nombre}</div>`;
+    el2.onclick = () => { selectedOpcionId = o.id; document.querySelectorAll('#opciones-grid .selector-card').forEach(c=>c.classList.remove('selected')); el2.classList.add('selected'); };
+    grid.appendChild(el2);
+  });
+  document.getElementById('opciones-section').style.display = '';
+}
+
+async function iniciarCarpeta() {
+  if (!selectedOpcionId) return toast('Selecciona una opción de titulación.', 'error');
+  showLoading();
+  try {
+    const res = await apiFetch('/api/carpeta/iniciar', 'POST', {opcion_id: selectedOpcionId});
+    if (!res.ok) { const e = await res.json(); return toast(e.detail, 'error'); }
+    resumenActual = await res.json();
+    renderCarpeta(resumenActual);
+    showView('carpeta');
+  } catch { toast('Error al iniciar carpeta.', 'error'); }
+  finally { hideLoading(); }
+}
+
+// ════════════════════════════════════════════
+//  CARPETA / CHECKLIST
+// ════════════════════════════════════════════
+function renderCarpeta(r) {
+  document.getElementById('prog-titulo').textContent = r.opcion;
+  document.getElementById('prog-sub').textContent = r.carrera;
+  document.getElementById('prog-pct').textContent = r.progreso.porcentaje + '%';
+  document.getElementById('prog-bar').style.width = r.progreso.porcentaje + '%';
+  document.getElementById('ready-banner').style.display = r.lista_para_entrega ? '' : 'none';
+
+  const list = document.getElementById('checklist-list');
+  list.innerHTML = '';
+  r.documentos.forEach(doc => list.appendChild(buildDocCard(doc)));
+}
+
+function buildDocCard(doc) {
+  const card = document.createElement('div');
+  card.className = `doc-card estado-${doc.estado}`;
+  card.id = `doc-card-${doc.requisito_id}`;
+
+  const checkIcon = doc.estado === 'completo' ? '✓' : doc.estado === 'rechazado' ? '✕' : '';
+  const badges = [
+    !doc.obligatorio ? `<span class="badge badge-optional">Opcional</span>` : '',
+    doc.permite_archivo ? `<span class="badge badge-file">📎 Archivo</span>` : '',
+    doc.archivo_nombre ? `<span class="badge badge-done">Subido</span>` : '',
+  ].join('');
+
+  card.innerHTML = `
+    <div class="doc-header" onclick="toggleDoc(${doc.requisito_id})">
+      <div class="doc-check" onclick="event.stopPropagation(); quickToggle(${doc.requisito_id}, '${doc.estado}')">${checkIcon}</div>
+      <div class="doc-info">
+        <div class="doc-nombre">${doc.nombre}</div>
+        <div class="doc-desc">${doc.descripcion || ''}</div>
+        <div class="doc-badges">${badges}</div>
+      </div>
+      <div class="doc-arrow">▶</div>
+    </div>
+    <div class="doc-body">
+      ${doc.instrucciones ? `
+        <div class="instrucciones-box">
+          <div class="instrucciones-label">📌 Instrucciones</div>
+          ${doc.instrucciones}
+        </div>` : ''}
+      <div class="doc-actions">
+        ${doc.estado !== 'completo'
+          ? `<button class="btn-mark btn-mark-complete" onclick="marcarDoc(${doc.requisito_id}, 'completo')">✓ Marcar como listo</button>`
+          : `<button class="btn-mark btn-mark-pending" onclick="marcarDoc(${doc.requisito_id}, 'pendiente')">↩ Marcar pendiente</button>`
+        }
+        ${doc.permite_archivo ? `
+          <label class="file-upload-label">
+            <input type="file" onchange="subirArchivo(${doc.requisito_id}, this)" accept=".pdf,.jpg,.jpeg,.png,.docx,.zip"/>
+            📎 ${doc.archivo_nombre ? 'Cambiar archivo' : 'Subir archivo'}
+          </label>` : ''}
+      </div>
+      ${doc.archivo_nombre ? `<div class="doc-notas">📄 ${doc.archivo_nombre}</div>` : ''}
+      ${doc.notas ? `<div class="doc-notas">💬 ${doc.notas}</div>` : ''}
+      ${doc.updated_at ? `<div class="doc-notas" style="margin-top:6px">Actualizado: ${fmtDate(doc.updated_at)}</div>` : ''}
+    </div>`;
+  return card;
+}
+
+function toggleDoc(rid) {
+  const card = document.getElementById(`doc-card-${rid}`);
+  card.classList.toggle('open');
+}
+
+async function quickToggle(rid, estadoActual) {
+  const nuevoEstado = estadoActual === 'completo' ? 'pendiente' : 'completo';
+  await marcarDoc(rid, nuevoEstado);
+}
+
+async function marcarDoc(rid, estado) {
+  showLoading();
+  try {
+    const res = await apiFetch('/api/carpeta/documento/marcar', 'PATCH', {requisito_id: rid, estado});
+    if (!res.ok) { const e = await res.json(); return toast(e.detail, 'error'); }
+    resumenActual = await res.json();
+    renderCarpeta(resumenActual);
+    toast(estado === 'completo' ? '✓ Marcado como completado' : 'Marcado como pendiente', estado === 'completo' ? 'success' : 'error');
+  } catch { toast('Error al actualizar.', 'error'); }
+  finally { hideLoading(); }
+}
+
+async function subirArchivo(rid, input) {
+  const file = input.files[0];
+  if (!file) return;
+  const form = new FormData();
+  form.append('requisito_id', rid);
+  form.append('archivo', file);
+  showLoading();
+  try {
+    const res = await fetch(`${API}/api/carpeta/documento/subir`, {
+      method: 'POST',
+      headers: { Authorization: `Bearer ${TOKEN}` },
+      body: form,
+    });
+    if (!res.ok) { const e = await res.json(); return toast(e.detail, 'error'); }
+    resumenActual = await res.json();
+    renderCarpeta(resumenActual);
+    toast('📎 Archivo subido correctamente', 'success');
+  } catch { toast('Error al subir archivo.', 'error'); }
+  finally { hideLoading(); }
+}
+
+// ════════════════════════════════════════════
+//  HISTORIAL
+// ════════════════════════════════════════════
+async function loadHistorial() {
+  const list = document.getElementById('historial-list');
+  list.innerHTML = '<div class="empty-state">Cargando…</div>';
+  try {
+    const res = await apiFetch('/api/carpeta/historial');
+    if (!res.ok) return;
+    const data = await res.json();
+    if (!data.length) { list.innerHTML = '<div class="empty-state">Sin actividad aún.</div>'; return; }
+    list.innerHTML = '';
+    data.forEach(h => {
+      const el = document.createElement('div');
+      el.className = 'historial-item';
+      el.innerHTML = `
+        <div class="historial-dot"></div>
+        <div>
+          <div class="historial-accion">${h.accion.replace(/_/g,' ')}</div>
+          <div class="historial-detalle">${h.detalle || ''}</div>
+          <div class="historial-time">${fmtDate(h.timestamp)}</div>
+        </div>`;
+      list.appendChild(el);
+    });
+  } catch { list.innerHTML = '<div class="empty-state">Error al cargar historial.</div>'; }
+}
+
+// ════════════════════════════════════════════
+//  TABS
+// ════════════════════════════════════════════
+function switchTab(name, btn) {
+  document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+  document.querySelectorAll('.tab-pane').forEach(p => p.classList.remove('active'));
+  btn.classList.add('active');
+  document.getElementById(`tab-${name}`).classList.add('active');
+  if (name === 'historial') loadHistorial();
+}
+
+// ════════════════════════════════════════════
+//  HELPERS
+// ════════════════════════════════════════════
+function showView(name) {
+  document.querySelectorAll('.view').forEach(v => v.classList.remove('active'));
+  document.getElementById(`view-${name}`).classList.add('active');
+}
+
+function apiFetch(url, method = 'GET', body = null) {
+  const opts = {
+    method,
+    headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${TOKEN}` },
+  };
+  if (body) opts.body = JSON.stringify(body);
+  return fetch(`${API}${url}`, opts);
+}
+
+function val(id) { return document.getElementById(id).value.trim(); }
+function showErr(id, msg) { const el = document.getElementById(id); el.textContent = msg; el.style.display = ''; }
+function clearErr(id) { const el = document.getElementById(id); el.style.display = 'none'; el.textContent = ''; }
+function showLoading() { document.getElementById('loading-overlay').classList.add('active'); }
+function hideLoading() { document.getElementById('loading-overlay').classList.remove('active'); }
+
+function toast(msg, type = 'success') {
+  const c = document.getElementById('toast-container');
+  const t = document.createElement('div');
+  t.className = `toast ${type}`;
+  t.innerHTML = `<span>${type === 'success' ? '✓' : '⚠'}</span><span>${msg}</span>`;
+  c.appendChild(t);
+  setTimeout(() => t.remove(), 3500);
+}
+
+function fmtDate(iso) {
+  try {
+    return new Date(iso).toLocaleString('es-MX', { day:'2-digit', month:'short', year:'numeric', hour:'2-digit', minute:'2-digit' });
+  } catch { return iso; }
+}
+
+// ════════════════════════════════════════════
+//  INIT
+// ════════════════════════════════════════════
+boot();
+</script>
+</body>
+</html>
