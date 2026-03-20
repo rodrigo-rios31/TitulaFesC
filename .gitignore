@@ -1,0 +1,28 @@
+# Base de datos
+*.db
+*.sqlite3
+
+# Entorno virtual
+venv/
+env/
+
+# Archivos subidos
+uploads/
+
+# Python
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+.Python
+
+# Variables de entorno
+.env
+
+# IDEs
+.vscode/
+.idea/
+
+# OS
+.DS_Store
+Thumbs.db
